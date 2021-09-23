@@ -1,0 +1,13 @@
+root_url: "https://archiveofourown.org/tags/{tag}/works"
+searches:
+  - name: "Courage the Cowardly Dog fics"
+    parameters:
+    - key: "tag"
+      value: "Courage the Cowardly Dog"
+page_num_parameter: "page"
+cache_folder: "test-cache"
+# TODO: setup all mongo db stuff
+mongo:
+  connection_string: "mongodb://localhost:27017"
+  db: "fanfics-test"
+  collection: "works"
