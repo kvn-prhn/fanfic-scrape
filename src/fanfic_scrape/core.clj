@@ -101,12 +101,21 @@
         works-elems (.select html-soup ".work.index.group li.work.blurb")]
     (map 
      (fn [work-elem]
-       {:title (.text (.select work-elem "h4.heading a:not([rel])"))
-        :author (.text (.select work-elem "h4.heading a[rel]"))
-        :tags (map (fn [e] (.text e)) (.select work-elem "ul.tags li:not(.warnings)")) ; should be a list of tags
-        :summary (.text (.select work-elem ".summary p"))
-        :works-path (.attr (.first (.select work-elem "h4.heading a[href]")) "href")})
-     works-elems))) 
+       (let [replace-commas (fn [s] (string/trim (string/replace s #"," "")))
+             parse-or-negative-one (fn [s] (if (nil? (re-matches #"[0-9]+" s)) -1 (Integer/parseInt s)))
+             words-str (replace-commas (.text (.select work-elem ".stats dd.words")))
+             kudos-str (replace-commas (.text (.select work-elem ".stats dd.kudos"))) 
+             hits-str (replace-commas (.text (.select work-elem ".stats dd.hits")))]
+         {:title (.text (.select work-elem "h4.heading a:not([rel])"))
+          :author (.text (.select work-elem "h4.heading a[rel]"))
+          :tags (map (fn [e] (.text e)) (.select work-elem "ul.tags li:not(.warnings)")) ; should be a list of tags
+          :summary (.text (.select work-elem ".summary p"))
+          :works-path (.attr (.first (.select work-elem "h4.heading a[href]")) "href")
+          :language (.text (.select work-elem ".stats dd.language"))
+          :words (parse-or-negative-one words-str)
+          :kudos (parse-or-negative-one kudos-str)
+          :hits (parse-or-negative-one hits-str)}))
+     works-elems)))
 
 
 (defn clear-cache-files [urls cache-folder]
@@ -116,8 +125,7 @@
     (map 
      (fn [f] (if (.exists f) 
                (.delete f)
-               false))
-                
+               false)) 
      expected-cache-files)))
 
 
@@ -152,28 +160,24 @@
 
 
 (defn works-metadata-to-mongo-doc [metadata config-map]
-  ; (println metadata)
-  ; (println config-map)
   (let [url-uri (.toURI (io/as-url (.substring 
                                     (get config-map :root-url)
                                     0
                                     (.indexOf (get config-map :root-url) "/" (+ 3 (.length "https://"))))))]
-  (.append
-   (.append
-   (.append
-    (.append
-    (.append
-     (new Document
-         "title" (get metadata :title))
-         "author" (get metadata :author))
-         "tags" (get metadata :tags))
-         "summary" (get metadata :summary))
-         "created" (.toString (.toInstant (new Date))))
-         "url" (.toString (new URI
-                               (.getScheme url-uri)
-                               (.getAuthority url-uri) (get metadata :works-path)
-                               (.getQuery url-uri) (.getFragment url-uri)))
-   )))
+     (new Document {"title" (get metadata :title)
+                    "author" (get metadata :author)
+                    "tags" (get metadata :tags)
+                    "summary" (get metadata :summary)
+                    "created" (.toString (.toInstant (new Date)))
+                    "url" (.toString (new URI
+                                          (.getScheme url-uri)
+                                          (.getAuthority url-uri) (get metadata :works-path)
+                                          (.getQuery url-uri) (.getFragment url-uri)))
+                    "language" (get metadata :language)
+                    "words" (get metadata :words)
+                    "kudos" (get metadata :kudos)
+                    "hits" (get metadata :hits)})))
+   
 
 
 (defn -main

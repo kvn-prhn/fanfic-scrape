@@ -44,7 +44,7 @@
 (deftest test-extract-max-page-num
   (testing "extract-max-page-num fail"
     (let [test-cache-folder (-> "test-cache" io/resource io/file)]
-     (is (= 1345 (extract-max-page-num 
+     (is (= 1353 (extract-max-page-num 
                   (get-page-html "https://archiveofourown.org/tags/Adventure/works" test-cache-folder))))
       
     )))
@@ -57,8 +57,12 @@
                         (get-page-html "https://archiveofourown.org/tags/Adventure/works" test-cache-folder))
           first-data (first extract-data)]
       (is (seq extract-data)) ; is this a sequence and not empty?
-      (is (= (get first-data :title) "Date with the Devil" )) ; first title might be different
-      (is (= (get first-data :works-path) "/works/33899812"))
+      (is (= "Azur Lane:Tricolore of the Stars" (get first-data :title))) ; first title might be different
+      (is (= "/works/33319573" (get first-data :works-path)))
+
+      (is (= "English" (get first-data :language)))
+      (is (= 29740 (get first-data :words)))
+      (is (= 279 (get first-data :hits)))
     )))
 
 
@@ -101,4 +105,7 @@
       (is (string? (.get doc "summary")))
       (is (string? (.get doc "created")))
       (is (string? (.get doc "url")))
+      (is (string? (.get doc "language")))
+      (is (int? (.get doc "words")))
+      (is (int? (.get doc "hits")))
       )))
