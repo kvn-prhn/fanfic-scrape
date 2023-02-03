@@ -54,6 +54,7 @@
                                     "%20"))
                                   (rest params))))
                    :page-num-parameter (get config "page_num_parameter")
+                   :max-page-num ((fn [x] (if (not (nil? x)) x 100)) (get config "max_page_num"))
                    :cache-folder (get config "cache_folder")})
                 (get config "searches"))
      :mongo-connection-string (get (get config "mongo") "connection_string")
@@ -129,10 +130,10 @@
      expected-cache-files)))
 
 
-(defn get-urls-all-pages [base-url page-num-parameter cache-folder]
+(defn get-urls-all-pages [base-url page-num-parameter config-max-page-num cache-folder]
   (let [first-page-url (add-url-page-num base-url page-num-parameter 1)
         first-page-html (get-page-html first-page-url cache-folder)
-        max-page-num (extract-max-page-num first-page-html)]
+        max-page-num (min config-max-page-num (extract-max-page-num first-page-html))]
     (map 
      (fn [page-num]
        (add-url-page-num 
@@ -149,6 +150,7 @@
       (get-urls-all-pages
                (get config-search :base-url)
                (get config-search :page-num-parameter)
+               (get config-search :max-page-num)
                (get config-search :cache-folder)))
             (get config-map :searches))))
 
@@ -186,7 +188,7 @@
   (if (>= (count args) 1)
     (let [config-file (nth args 0)
           config-map (process-config config-file)
-          ; generate the list of urls 
+          ; generate the list of urls, limit by max page number
           urls-list (get-urls-all-pages-config config-map)
           ; get the html pages from the urls list
           urls-list-html (map (fn [url] (get-page-html url (get config-map :cache-folder))) urls-list)
